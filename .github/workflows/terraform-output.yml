@@ -39,13 +39,8 @@ jobs:
       - name: Terraform Output
         id: terraform-output
         run: |
-          # Get the Terraform output in JSON format
-          OUTPUT=$(terraform output -json)
-
-          # Convert multi-line output to a single line with escaped newlines
-          OUTPUT="${OUTPUT//'%'/'%25'}"
-          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
-          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+          # Get the Terraform output in JSON format and compact it
+          OUTPUT=$(terraform output -json | jq -c)
 
           # Set the output to GITHUB_OUTPUT
           echo "terraform_output=$OUTPUT" >> $GITHUB_OUTPUT
