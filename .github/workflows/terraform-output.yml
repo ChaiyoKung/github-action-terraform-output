@@ -5,6 +5,8 @@ on: workflow_dispatch
 jobs:
   deploy-and-output:
     runs-on: ubuntu-latest
+    outputs:
+      terraform_output: ${{ steps.terraform-output.outputs.terraform_output }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -35,6 +37,27 @@ jobs:
           ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
 
       - name: Terraform Output
+        id: terraform-output
         run: |
-          terraform output -json > output.json
-          cat output.json
+          # Get the Terraform output in JSON format
+          OUTPUT=$(terraform output -json)
+
+          # Convert multi-line output to a single line with escaped newlines
+          OUTPUT="${OUTPUT//'%'/'%25'}"
+          OUTPUT="${OUTPUT//$'\n'/'%0A'}"
+          OUTPUT="${OUTPUT//$'\r'/'%0D'}"
+
+          # Set the output to GITHUB_OUTPUT
+          echo "terraform_output=$OUTPUT" >> $GITHUB_OUTPUT
+
+          # Also display the output in the logs
+          echo "$OUTPUT"
+
+  log-output:
+    runs-on: ubuntu-latest
+    needs: deploy-and-output
+    steps:
+      - name: Log Terraform Output
+        run: |
+          # Read the output from the previous job
+          echo "Terraform Output: ${{ needs.deploy-and-output.outputs.terraform_output }}"
